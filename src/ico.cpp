@@ -1,0 +1,71 @@
+#include "ico.hpp"
+#include "png.hpp"
+
+#include <iostream>
+#include <fstream>
+
+bool write_ico_file(const char* path, const std::vector<PngImage>& png)
+{
+    std::cout << "Writing ICO file to " << path << "...\n";
+
+    std::basic_ofstream<uint8_t> ico_stream(path, std::ios::binary);
+    if (!ico_stream.is_open())
+    {
+        std::cerr << "Error, unable to open " << path << "\n";
+        return false;
+    }
+
+    constexpr auto ICO_RESOURCE_TYPE = 1;
+    const IcoHeader header = {
+        0,
+        ICO_RESOURCE_TYPE,
+        static_cast<uint16_t>(png.size())
+    };
+
+    if (!ico_stream.write(reinterpret_cast<const uint8_t*>(&header), sizeof(header)))
+    {
+        std::cerr << "Error, unable to write ico header to " << path << "\n";
+        return false;
+    }
+
+    uint32_t offset = (sizeof(IcoHeader) + (sizeof(IcoEntry) * header.count));
+    for (auto& image : png)
+    {
+        std::cout << " Adding PNG width " << image.width
+                  << ", height " << image.height
+                  << ", bit depth " << static_cast<uint16_t>(image.bit_depth)
+                  << "...\n";
+
+        const IcoEntry entry = {
+            (image.width > 255) ? static_cast<uint8_t>(0) : static_cast<uint8_t>(image.width),
+            (image.height > 255) ? static_cast<uint8_t>(0) : static_cast<uint8_t>(image.height),
+            0, // color palette
+            0, // reserved
+            0, // color plane
+            static_cast<uint16_t>(image.bit_depth),
+            image.size,
+            offset
+        };
+
+        if (!ico_stream.write(reinterpret_cast<const uint8_t*>(&entry), sizeof(entry)))
+        {
+            std::cerr << "Error while writing ico entry to " << path << "\n";
+            return false;
+        }
+
+        offset += entry.size;
+    }
+
+    for (auto& image : png)
+    {
+        if (!ico_stream.write(image.data.data(), image.size))
+        {
+            std::cerr << "Error while writing PNG raw data to " << path << "\n";
+            return false;
+        }
+    }
+
+    std::cout << "Done.\n";
+
+    return true;
+}
