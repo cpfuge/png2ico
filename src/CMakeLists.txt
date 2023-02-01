@@ -1,7 +1,9 @@
 set(SOURCE_FILES 
     main.cpp
     png.cpp
-    ico.cpp)
+    png.hpp
+    ico.cpp
+    ico.hpp)
 
 add_executable(png2ico ${SOURCE_FILES})
 

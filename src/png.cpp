@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstring>
 
 constexpr auto PNG_SIGNATURE_SIZE = 8;
 constexpr auto PNG_CHUNK_TYPE_SIZE = 4;
@@ -31,7 +32,7 @@ bool read_png_file(const char* path, PngImage* png)
     if (!png)
         return false;
 
-    std::basic_ifstream<uint8_t> png_stream(path, std::ios::binary);
+    std::ifstream png_stream(path, std::ios::binary);
     if (!png_stream.is_open())
     {
         std::cerr << "Error, cannot open " << path << "\n";
@@ -41,7 +42,7 @@ bool read_png_file(const char* path, PngImage* png)
     png->size = get_file_size(path);
 
     uint8_t signature[PNG_SIGNATURE_SIZE];
-    if (!png_stream.read(signature, sizeof(signature)))
+    if (!png_stream.read(reinterpret_cast<char*>(signature), sizeof(signature)))
     {
         std::cerr << "Error while reading file signature from " << path << "\n";
         return false;
@@ -54,7 +55,7 @@ bool read_png_file(const char* path, PngImage* png)
     }
 
     uint32_t chunk_size = 0;
-    if (!png_stream.read(reinterpret_cast<uint8_t*>(&chunk_size), sizeof(chunk_size)))
+    if (!png_stream.read(reinterpret_cast<char*>(&chunk_size), sizeof(chunk_size)))
     {
         std::cerr << "Error while reading PNG chunk size from " << path << "\n";
         return false;
@@ -62,21 +63,21 @@ bool read_png_file(const char* path, PngImage* png)
 
     chunk_size = swap_uint32(chunk_size);
 
-    uint8_t chunk_type[PNG_CHUNK_TYPE_SIZE];
-    if (!png_stream.read(chunk_type, sizeof(chunk_type)))
+    uint8_t chunk[PNG_CHUNK_TYPE_SIZE];
+    if (!png_stream.read(reinterpret_cast<char*>(chunk), sizeof(chunk)))
     {
         std::cerr << "Error while reading PNG chunk type from " << path << "\n";
         return false;
     }
 
-    if (!check_ihdr_chunk(chunk_type) && chunk_size != PNG_IHDR_CHUNK_SIZE)
+    if (!check_ihdr_chunk(chunk) && chunk_size != PNG_IHDR_CHUNK_SIZE)
     {
         std::cerr << "Error, " << path << " unsupported PNG format\n";
         return false;
     }
 
     uint32_t width = 0;
-    if (!png_stream.read(reinterpret_cast<uint8_t*>(&width), sizeof(width)))
+    if (!png_stream.read(reinterpret_cast<char*>(&width), sizeof(width)))
     {
         std::cerr << "Error while reading PNG width from " << path << "\n";
         return false;
@@ -84,7 +85,7 @@ bool read_png_file(const char* path, PngImage* png)
     png->width = swap_uint32(width);
 
     uint32_t height = 0;
-    if (!png_stream.read(reinterpret_cast<uint8_t*>(&height), sizeof(height)))
+    if (!png_stream.read(reinterpret_cast<char*>(&height), sizeof(height)))
     {
         std::cerr << "Error while reading PNG height from " << path << "\n";
         return false;
@@ -99,7 +100,7 @@ bool read_png_file(const char* path, PngImage* png)
         return false;
     }
 
-    if (!png_stream.read(&png->bit_depth, sizeof(png->bit_depth)))
+    if (!png_stream.read(reinterpret_cast<char*>(&png->bit_depth), sizeof(png->bit_depth)))
     {
         std::cerr << "Error while reading PNG color depth from " << path << "\n";
         return false;
@@ -108,8 +109,8 @@ bool read_png_file(const char* path, PngImage* png)
     png_stream.seekg(std::ios::beg);
     png->data.reserve(png->size);
     png->data.insert(png->data.begin(),
-                     std::istreambuf_iterator<uint8_t>(png_stream),
-                     std::istreambuf_iterator<uint8_t>());
+                     std::istreambuf_iterator<char>(png_stream),
+                     std::istreambuf_iterator<char>());
 
     return true;
 }

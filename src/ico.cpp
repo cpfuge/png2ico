@@ -8,7 +8,7 @@ bool write_ico_file(const char* path, const std::vector<PngImage>& png)
 {
     std::cout << "Writing ICO file to " << path << "...\n";
 
-    std::basic_ofstream<uint8_t> ico_stream(path, std::ios::binary);
+    std::ofstream ico_stream(path, std::ios::binary);
     if (!ico_stream.is_open())
     {
         std::cerr << "Error, unable to open " << path << "\n";
@@ -22,7 +22,7 @@ bool write_ico_file(const char* path, const std::vector<PngImage>& png)
         static_cast<uint16_t>(png.size())
     };
 
-    if (!ico_stream.write(reinterpret_cast<const uint8_t*>(&header), sizeof(header)))
+    if (!ico_stream.write(reinterpret_cast<const char*>(&header), sizeof(header)))
     {
         std::cerr << "Error, unable to write ico header to " << path << "\n";
         return false;
@@ -47,7 +47,7 @@ bool write_ico_file(const char* path, const std::vector<PngImage>& png)
             offset
         };
 
-        if (!ico_stream.write(reinterpret_cast<const uint8_t*>(&entry), sizeof(entry)))
+        if (!ico_stream.write(reinterpret_cast<const char*>(&entry), sizeof(entry)))
         {
             std::cerr << "Error while writing ico entry to " << path << "\n";
             return false;
@@ -58,7 +58,7 @@ bool write_ico_file(const char* path, const std::vector<PngImage>& png)
 
     for (auto& image : png)
     {
-        if (!ico_stream.write(image.data.data(), image.size))
+        if (!ico_stream.write(reinterpret_cast<const char*>(image.data.data()), image.size))
         {
             std::cerr << "Error while writing PNG raw data to " << path << "\n";
             return false;
