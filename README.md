@@ -17,7 +17,7 @@ cmake ..
 make
 ```
 
-## Ussage
+## Usage
 
 ```bash
 png2ico icofile pngfile1 [pngfile2 ...]
